@@ -13,13 +13,14 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required',
+            'username' => 'required|unique:users',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
         ]);
 
         $user = User::create([
-            'name' => $request->name,
+            'name' => $request->username,
+            'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
@@ -35,15 +36,19 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        // Cari user berdasarkan username atau email
+        $loginField = $request->username ?? $request->email;
+
+        $user = User::where('username', $loginField)
+                    ->orWhere('email', $loginField)
+                    ->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Email atau password salah'],
+                'login' => ['Username/email atau password salah'],
             ]);
         }
 
